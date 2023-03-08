@@ -1,28 +1,43 @@
 // swift-tools-version: 5.7
-// The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
-    name: "swift-shell-client",
-    products: [
-        // Products define the executables and libraries a package produces, and make them visible to other packages.
-        .library(
-            name: "swift-shell-client",
-            targets: ["swift-shell-client"]),
-    ],
-    dependencies: [
-        // Dependencies declare other packages that this package depends on.
-        // .package(url: /* package url */, from: "1.0.0"),
-    ],
-    targets: [
-        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
-        // Targets can depend on other targets in this package, and on products in packages this package depends on.
-        .target(
-            name: "swift-shell-client",
-            dependencies: []),
-        .testTarget(
-            name: "swift-shell-clientTests",
-            dependencies: ["swift-shell-client"]),
-    ]
+  name: "swift-shell-client",
+  platforms: [
+    .macOS(.v10_15)
+  ],
+  products: [
+    .executable(name: "version", targets: ["version"]),
+    .library(name: "ShellClient", targets: ["ShellClient"]),
+  ],
+  dependencies: [
+    .package(url: "https://github.com/pointfreeco/swift-dependencies.git", from: "0.1.4"),
+    .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
+    .package(url: "https://github.com/adorkable/swift-log-format-and-pipe.git", from: "0.1.0"),
+    .package(url: "https://github.com/onevcat/Rainbow", from: "4.0.0")
+  ],
+  targets: [
+    .target(
+      name: "ShellClient",
+      dependencies: [
+        .product(name: "Dependencies", package: "swift-dependencies"),
+        .product(name: "Logging", package: "swift-log"),
+        .product(name: "LoggingFormatAndPipe", package: "swift-log-format-and-pipe"),
+        .product(name: "Rainbow", package: "Rainbow"),
+      ]
+    ),
+    .testTarget(
+      name: "ShellClientTests",
+      dependencies: [
+        "ShellClient"
+      ]
+    ),
+    .executableTarget(
+      name: "version",
+      dependencies: [
+        "ShellClient",
+      ]
+    ),
+  ]
 )
