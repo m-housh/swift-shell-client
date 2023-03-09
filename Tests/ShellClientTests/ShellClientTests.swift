@@ -7,6 +7,7 @@ final class SwiftShellClientTests: XCTestCase {
   #if !os(Linux)
   func test_foreground_shell() throws {
     try withDependencies {
+      $0.logger = .liveValue
       $0.logger.logLevel = .debug
       $0.shellClient = .liveValue
     } operation: {
@@ -18,8 +19,7 @@ final class SwiftShellClientTests: XCTestCase {
       try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
       defer { try? FileManager.default.removeItem(at: tmpDir) }
       
-      var shells: [ShellCommand.Shell] = [.sh, .bash, .csh, .tcsh, .zsh]
-
+      let shells: [ShellCommand.Shell] = [.sh, .bash, .csh, .tcsh, .zsh]
      
       for shell in shells {
         
@@ -29,11 +29,11 @@ final class SwiftShellClientTests: XCTestCase {
         
         let command = ShellCommand(
           shell: shell,
-          workingDirectory: tmpDir.absoluteString,
+          in: tmpDir.absoluteString,
           "echo \"Blob\" > \(filePath)"
         )
         
-        try shellClient.foregroundShell(command)
+        try shellClient.foreground(command)
         
         let fileUrl = tmpDir.appendingPathComponent(filePath)
         
@@ -60,7 +60,7 @@ final class SwiftShellClientTests: XCTestCase {
       try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
       defer { try? FileManager.default.removeItem(at: tmpDir) }
       
-      var shells: [ShellCommand.Shell] = [.sh, .bash, .csh, .tcsh, .zsh]
+      let shells: [ShellCommand.Shell] = [.sh, .bash, .csh, .tcsh, .zsh]
       
       for shell in shells {
         
@@ -70,11 +70,11 @@ final class SwiftShellClientTests: XCTestCase {
         
         let command = ShellCommand(
           shell: shell,
-          workingDirectory: tmpDir.absoluteString,
+          in: tmpDir.absoluteString,
           "echo \"Blob\" > \(filePath)"
         )
         
-        try await shellClient.foregroundShell(command)
+        try await shellClient.foreground(command)
         
         let fileUrl = tmpDir.appendingPathComponent(filePath)
         
@@ -89,7 +89,7 @@ final class SwiftShellClientTests: XCTestCase {
   }
   #endif
   
-  func test_background_shell() throws {
+  func test_background_shell_with_array_literal_command() throws {
     try withDependencies {
       $0.logger.logLevel = .debug
       $0.shellClient.overrideBackgroundShell(with: Data("Foo".utf8))
@@ -97,7 +97,7 @@ final class SwiftShellClientTests: XCTestCase {
       @Dependency(\.shellClient) var shellClient
       
       let result = try shellClient
-        .backgroundShell(.init(arguments: ["foo", "bar"]))
+        .background(["foo", "bar"])
       
       XCTAssertEqual(result, "Foo")
     }
@@ -113,7 +113,7 @@ final class SwiftShellClientTests: XCTestCase {
     } operation: {
       @Dependency(\.shellClient) var shellClient
       
-      let result = try shellClient.backgroundShell(
+      let result = try shellClient.background(
           command: .init("foo", "bar"),
           as: Mock.self
         )
@@ -129,7 +129,7 @@ final class SwiftShellClientTests: XCTestCase {
     } operation: {
       @Dependency(\.asyncShellClient) var shellClient
       
-      let result = try await shellClient.backgroundShell(.init("foo", "bar"))
+      let result = try await shellClient.background(.init("foo", "bar"))
       
       XCTAssertEqual(result, "Foo")
     }
@@ -145,7 +145,7 @@ final class SwiftShellClientTests: XCTestCase {
     } operation: {
       @Dependency(\.asyncShellClient) var shellClient
       
-      let result = try await shellClient.backgroundShell(
+      let result = try await shellClient.background(
           command: .init("foo", "bar"),
           as: Mock.self
         )

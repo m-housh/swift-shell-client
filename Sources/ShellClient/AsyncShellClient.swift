@@ -2,12 +2,20 @@ import Dependencies
 import Foundation
 import XCTestDynamicOverlay
 
+/// Run shell commands from your swift code.
+///
+///
 public struct AsyncShellClient {
   
-  /// Run a shell command in the foreground.
+  /// Run a shell command in the foreground.  ///
+  ///
+  /// This is generally not interacted with directly, instead use ``ShellClient/AsyncShellClient/foreground(_:)``
   var foregroundShell: (ShellCommand) async throws -> Void
   
   /// Run a shell command in the background, returning it's output as `Data`.
+  ///
+  /// This is generally not interacted with directly, instead use one of the background methods, such as
+  /// ``ShellClient/AsyncShellClient/background(command:as:decodedBy:)``
   var backgroundShell: (ShellCommand) async throws -> Data
   
   /// Create a new ``ShellClient`` instance.
@@ -24,24 +32,23 @@ public struct AsyncShellClient {
     self.foregroundShell = foregroundShell
     self.backgroundShell = backgroundShell
   }
-  
     
   /// Run a shell command in the foreground.
   ///
   /// - Parameters:
   ///   - command: The shell command to run.
-  public func foregroundShell(_ command: ShellCommand) async throws {
+  public func foreground(_ command: ShellCommand) async throws {
     try await foregroundShell(command)
   }
    
   /// Run a shell command in the background, decoding it's output.
   ///
   /// - Parameters:
-  ///   - decodable: The type to decode.
-  ///   - jsonDecoder: The json decoder to use for decoding.
   ///   - command: The shell command to run.
+  ///   - decodable: The type to decode from the output.
+  ///   - jsonDecoder: The json decoder to use for decoding.
   @discardableResult
-  public func backgroundShell<D: Decodable>(
+  public func background<D: Decodable>(
     command: ShellCommand,
     as decodable: D.Type,
     decodedBy jsonDecoder: JSONDecoder = .init()
@@ -53,13 +60,10 @@ public struct AsyncShellClient {
   /// Run a shell command in the background, returning it's output as a`String`.
   ///
   /// - Parameters:
-  ///   - shell: The shell launch path
-  ///   - environmentOverrides: Override / set values in the process's environment.
-  ///   - workingDirectory: Changes the directory to run the shell in.
+  ///   - command: The shell command to run.
   ///   - trimmingCharactersIn: Returns the output string trimming the characters given.
-  ///   - arguments: The shell command arguments to run.
   @discardableResult
-  public func backgroundShell(
+  public func background(
     _ command: ShellCommand,
     trimmingCharactersIn: CharacterSet? = nil
   ) async throws -> String {
@@ -84,16 +88,35 @@ extension AsyncShellClient {
   ) {
     self.backgroundShell = { _ in data }
   }
+    
+  /// Override's the foreground shell implementation.
+  ///
+  /// This is useful for testing purposes.
+  ///
+  /// - Parameters:
+  ///   - closure: The closure to run when a foreground shell is called.
+  public mutating func overrideForegroundShell(
+    with closure: @escaping (ShellCommand) async throws -> Void
+  ) {
+    self.foregroundShell = closure
+  }
 }
 
 // MARK: - Dependency
 extension AsyncShellClient: DependencyKey {
   
+  /// The ``ShellClient/AsyncShellClient`` that is used in a testing context, which is unimplemented,
+  /// meaning you will need to override the methods that get used, using one of the override methods, such as
+  /// ``ShellClient/AsyncShellClient/overrideBackgroundShell(with:)`` or
+  /// ``ShellClient/AsyncShellClient/overrideForegroundShell(with:)``.
+  ///
   public static let testValue = Self.init(
     foregroundShell: unimplemented("\(Self.self).foregroundShell"),
-    backgroundShell: unimplemented("\(Self.self).backgroundShellData", placeholder: Data())
+    backgroundShell: unimplemented("\(Self.self).backgroundShell", placeholder: Data())
   )
   
+  /// The ``ShellClient/AsyncShellClient`` that is used in a live context.
+  ///
   public static var liveValue: AsyncShellClient {
     .init(
       foregroundShell: { try $0.run(in: .foreground) },
@@ -104,6 +127,7 @@ extension AsyncShellClient: DependencyKey {
 
 extension DependencyValues {
   
+  /// Access a ``ShellClient/AsyncShellClient`` as a dependency.
   public var asyncShellClient: AsyncShellClient {
     get { self[AsyncShellClient.self] }
     set { self[AsyncShellClient.self] = newValue }
