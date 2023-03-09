@@ -40,3 +40,9 @@ build-documentation:
 		--transform-for-static-hosting \
 		--hosting-base-path swift-validations \
 		--output-path ./docs
+
+preview-documentation:
+	swift package \
+		--disable-sandbox \
+		preview-documentation \
+		--target "$(DOCC_TARGET)"
