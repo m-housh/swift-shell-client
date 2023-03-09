@@ -5,10 +5,10 @@ import XCTestDynamicOverlay
 public struct AsyncShellClient {
   
   /// Run a shell command in the foreground.
-  var foregroundShell: (LaunchPath, [String: String]?, [any CustomStringConvertible], String?) async throws -> Void
+  var foregroundShell: (ShellCommand) async throws -> Void
   
   /// Run a shell command in the background, returning it's output as `Data`.
-  var backgroundShellAsData: (LaunchPath, [String: String]?, [any CustomStringConvertible], String?) async throws -> Data
+  var backgroundShell: (ShellCommand) async throws -> Data
   
   /// Create a new ``ShellClient`` instance.
   ///
@@ -18,52 +18,35 @@ public struct AsyncShellClient {
   /// ```
   ///
   public init(
-    foregroundShell: @escaping (LaunchPath, [String : String]?, [any CustomStringConvertible], String?) async throws -> Void,
-    backgroundShellAsData: @escaping (LaunchPath, [String : String]?, [any CustomStringConvertible], String?) async throws -> Data
+    foregroundShell: @escaping (ShellCommand) async throws -> Void,
+    backgroundShell: @escaping (ShellCommand) async throws -> Data
   ) {
     self.foregroundShell = foregroundShell
-    self.backgroundShellAsData = backgroundShellAsData
+    self.backgroundShell = backgroundShell
   }
   
+    
   /// Run a shell command in the foreground.
   ///
   /// - Parameters:
-  ///   - shell: The shell launch path
-  ///   - environmentOverrides: Override / set values in the process's environment.
-  ///   - workingDirectory: Changes the directory to run the shell in.
-  ///   - arguments: The shell command arguments to run.
-  public func foregroundShell(
-    shell: LaunchPath = .sh,
-    environment environmentOverrides: [String: String]? = nil,
-    workingDirectory: String? = nil,
-    _ arguments: (any CustomStringConvertible)...
-  ) async throws {
-    try await self.foregroundShell(shell, environmentOverrides, arguments, workingDirectory)
+  ///   - command: The shell command to run.
+  public func foregroundShell(_ command: ShellCommand) async throws {
+    try await foregroundShell(command)
   }
-  
-  /// Run a shell command in the background and decoding as the Decodable type.
+   
+  /// Run a shell command in the background, decoding it's output.
   ///
   /// - Parameters:
-  ///   - shell: The shell launch path
-  ///   - environmentOverrides: Override / set values in the process's environment.
-  ///   - workingDirectory: Changes the directory to run the shell in.
-  ///   - arguments: The shell command arguments to run.
+  ///   - decodable: The type to decode.
+  ///   - jsonDecoder: The json decoder to use for decoding.
+  ///   - command: The shell command to run.
   @discardableResult
   public func backgroundShell<D: Decodable>(
+    command: ShellCommand,
     as decodable: D.Type,
-    decodedBy jsonDecoder: JSONDecoder = .init(),
-    shell: LaunchPath = .sh,
-    environment environmentOverrides: [String: String]? = nil,
-    workingDirectory: String? = nil,
-    _ arguments: (any CustomStringConvertible)...
+    decodedBy jsonDecoder: JSONDecoder = .init()
   ) async throws -> D {
-    let output = try await self.backgroundShellAsData(
-      shell,
-      environmentOverrides,
-      arguments,
-      workingDirectory
-    )
-    
+    let output = try await self.backgroundShell(command)
     return try jsonDecoder.decode(D.self, from: output)
   }
   
@@ -77,15 +60,10 @@ public struct AsyncShellClient {
   ///   - arguments: The shell command arguments to run.
   @discardableResult
   public func backgroundShell(
-    shell: LaunchPath = .sh,
-    environment environmentOverrides: [String: String]? = nil,
-    workingDirectory: String? = nil,
-    trimmingCharactersIn: CharacterSet? = nil,
-    _ arguments: (any CustomStringConvertible)...
+    _ command: ShellCommand,
+    trimmingCharactersIn: CharacterSet? = nil
   ) async throws -> String {
-    let output = try await self.backgroundShellAsData(
-      shell, environmentOverrides, arguments, workingDirectory
-    )
+    let output = try await self.backgroundShell(command)
     let string = String(decoding: output, as: UTF8.self)
     guard let trimmingCharactersIn else { return string }
     return string.trimmingCharacters(in: trimmingCharactersIn)
@@ -104,17 +82,24 @@ extension AsyncShellClient {
   public mutating func overrideBackgroundShell(
     with data: Data
   ) {
-    self.backgroundShellAsData = { _, _, _, _ in data }
+    self.backgroundShell = { _ in data }
   }
 }
 
-// MARK: - Test Dependency
-extension AsyncShellClient: TestDependencyKey {
+// MARK: - Dependency
+extension AsyncShellClient: DependencyKey {
   
   public static let testValue = Self.init(
     foregroundShell: unimplemented("\(Self.self).foregroundShell"),
-    backgroundShellAsData: unimplemented("\(Self.self).backgroundShellData", placeholder: Data())
+    backgroundShell: unimplemented("\(Self.self).backgroundShellData", placeholder: Data())
   )
+  
+  public static var liveValue: AsyncShellClient {
+    .init(
+      foregroundShell: { try $0.run(in: .foreground) },
+      backgroundShell: { try $0.run(in: .background) }
+    )
+  }
 }
 
 extension DependencyValues {

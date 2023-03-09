@@ -1,6 +1,6 @@
 import Dependencies
 import Foundation
-@_exported import Logging
+import Logging
 import LoggingFormatAndPipe
 
 extension Logger: DependencyKey {

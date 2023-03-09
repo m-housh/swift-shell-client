@@ -4,15 +4,91 @@ import ShellClient
 
 final class SwiftShellClientTests: XCTestCase {
   
-//  func test_foreground_shell() throws {
-//    try withDependencies {
-//      $0.shellClient = .liveValue
-//    } operation: {
-//      @Dependency(\.shellClient) var shellClient
-//
-//    }
-//  }
+  #if !os(Linux)
+  func test_foreground_shell() throws {
+    try withDependencies {
+      $0.logger.logLevel = .debug
+      $0.shellClient = .liveValue
+    } operation: {
+      @Dependency(\.shellClient) var shellClient
 
+      let tmpDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("shell-test")
+      
+      try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+      defer { try? FileManager.default.removeItem(at: tmpDir) }
+      
+      var shells: [ShellCommand.Shell] = [.sh, .bash, .csh, .tcsh, .zsh]
+
+     
+      for shell in shells {
+        
+        let shellDescription = shell.description.split(separator: "/").last!
+        
+        let filePath = "fg-shell-\(shellDescription).txt"
+        
+        let command = ShellCommand(
+          shell: shell,
+          workingDirectory: tmpDir.absoluteString,
+          "echo \"Blob\" > \(filePath)"
+        )
+        
+        try shellClient.foregroundShell(command)
+        
+        let fileUrl = tmpDir.appendingPathComponent(filePath)
+        
+        let contents = try Data(contentsOf: fileUrl)
+        let string = String(decoding: contents, as: UTF8.self)
+          .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        print(string)
+        XCTAssertEqual(string, "Blob")
+      }
+    }
+  }
+  
+  func test_foreground_shell_async() async throws {
+    try await withDependencies {
+      $0.logger.logLevel = .debug
+      $0.asyncShellClient = .liveValue
+    } operation: {
+      @Dependency(\.asyncShellClient) var shellClient
+
+      let tmpDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("shell-test")
+      
+      try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+      defer { try? FileManager.default.removeItem(at: tmpDir) }
+      
+      var shells: [ShellCommand.Shell] = [.sh, .bash, .csh, .tcsh, .zsh]
+      
+      for shell in shells {
+        
+        let shellDescription = shell.description.split(separator: "/").last!
+        
+        let filePath = "fg-shell-\(shellDescription).txt"
+        
+        let command = ShellCommand(
+          shell: shell,
+          workingDirectory: tmpDir.absoluteString,
+          "echo \"Blob\" > \(filePath)"
+        )
+        
+        try await shellClient.foregroundShell(command)
+        
+        let fileUrl = tmpDir.appendingPathComponent(filePath)
+        
+        let contents = try Data(contentsOf: fileUrl)
+        let string = String(decoding: contents, as: UTF8.self)
+          .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        print(string)
+        XCTAssertEqual(string, "Blob")
+      }
+    }
+  }
+  #endif
+  
   func test_background_shell() throws {
     try withDependencies {
       $0.logger.logLevel = .debug
@@ -21,7 +97,7 @@ final class SwiftShellClientTests: XCTestCase {
       @Dependency(\.shellClient) var shellClient
       
       let result = try shellClient
-        .backgroundShell("foo", "bar")
+        .backgroundShell(.init(arguments: ["foo", "bar"]))
       
       XCTAssertEqual(result, "Foo")
     }
@@ -37,10 +113,9 @@ final class SwiftShellClientTests: XCTestCase {
     } operation: {
       @Dependency(\.shellClient) var shellClient
       
-      let result = try shellClient
-        .backgroundShell(
-          as: Mock.self,
-          "foo", "bar"
+      let result = try shellClient.backgroundShell(
+          command: .init("foo", "bar"),
+          as: Mock.self
         )
       
       XCTAssertEqual(result.value, "Blob")
@@ -54,8 +129,7 @@ final class SwiftShellClientTests: XCTestCase {
     } operation: {
       @Dependency(\.asyncShellClient) var shellClient
       
-      let result = try await shellClient
-        .backgroundShell("foo", "bar")
+      let result = try await shellClient.backgroundShell(.init("foo", "bar"))
       
       XCTAssertEqual(result, "Foo")
     }
@@ -71,10 +145,9 @@ final class SwiftShellClientTests: XCTestCase {
     } operation: {
       @Dependency(\.asyncShellClient) var shellClient
       
-      let result = try await shellClient
-        .backgroundShell(
-          as: Mock.self,
-          "foo", "bar"
+      let result = try await shellClient.backgroundShell(
+          command: .init("foo", "bar"),
+          as: Mock.self
         )
       
       XCTAssertEqual(result.value, "Blob")

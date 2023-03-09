@@ -5,10 +5,10 @@ import XCTestDynamicOverlay
 public struct ShellClient {
   
   /// Run a shell command in the foreground.
-  var foregroundShell: (LaunchPath, [String: String]?, [any CustomStringConvertible], String?) throws -> Void
+  var foregroundShell: (ShellCommand) throws -> Void
   
   /// Run a shell command in the background, returning it's output as `Data`.
-  var backgroundShellAsData: (LaunchPath, [String: String]?, [any CustomStringConvertible], String?) throws -> Data
+  var backgroundShell: (ShellCommand) throws -> Data
   
   /// Create a new ``ShellClient`` instance.
   ///
@@ -18,79 +18,53 @@ public struct ShellClient {
   /// ```
   ///
   public init(
-    foregroundShell: @escaping (LaunchPath, [String : String]?, [any CustomStringConvertible], String?) throws -> Void,
-    backgroundShellAsData: @escaping (LaunchPath, [String : String]?, [any CustomStringConvertible], String?) throws -> Data
+    foregroundShell: @escaping (ShellCommand) throws -> Void,
+    backgroundShell: @escaping (ShellCommand) throws -> Data
   ) {
     self.foregroundShell = foregroundShell
-    self.backgroundShellAsData = backgroundShellAsData
+    self.backgroundShell = backgroundShell
   }
-  
+    
   /// Run a shell command in the foreground.
   ///
   /// - Parameters:
-  ///   - shell: The shell launch path
-  ///   - environmentOverrides: Override / set values in the process's environment.
-  ///   - workingDirectory: Changes the directory to run the shell in.
-  ///   - arguments: The shell command arguments to run.
-  public func foregroundShell(
-    shell: LaunchPath = .sh,
-    environment environmentOverrides: [String: String]? = nil,
-    workingDirectory: String? = nil,
-    _ arguments: (any CustomStringConvertible)...
-  ) throws {
-    try self.foregroundShell(shell, environmentOverrides, arguments, workingDirectory)
+  ///   - command: The shell command to run.
+  public func foregroundShell(_ command: ShellCommand) throws {
+    try self.foregroundShell(command)
   }
-  
-  /// Run a shell command in the background, returning it's output as `Data`.
+ 
+  /// Run a shell command in the background, decoding it's output.
   ///
   /// - Parameters:
-  ///   - shell: The shell launch path
-  ///   - environmentOverrides: Override / set values in the process's environment.
-  ///   - workingDirectory: Changes the directory to run the shell in.
-  ///   - arguments: The shell command arguments to run.
+  ///   - decodable: The type to decode.
+  ///   - jsonDecoder: The json decoder to use.
+  ///   - command: The shell command to run.
   @discardableResult
   public func backgroundShell<D: Decodable>(
+    command: ShellCommand,
     as decodable: D.Type,
-    decodedBy jsonDecoder: JSONDecoder = .init(),
-    shell: LaunchPath = .sh,
-    environment environmentOverrides: [String: String]? = nil,
-    workingDirectory: String? = nil,
-    _ arguments: (any CustomStringConvertible)...
+    decodedBy jsonDecoder: JSONDecoder = .init()
   ) throws -> D {
-    
-    let output = try self.backgroundShellAsData(
-      shell,
-      environmentOverrides,
-      arguments,
-      workingDirectory
-    )
-    
+    let output = try self.backgroundShell(command)
     return try jsonDecoder.decode(D.self, from: output)
   }
   
   /// Run a shell command in the background, returning it's output as a`String`.
   ///
   /// - Parameters:
-  ///   - shell: The shell launch path
-  ///   - environmentOverrides: Override / set values in the process's environment.
-  ///   - workingDirectory: Changes the directory to run the shell in.
+  ///   - command: The shell command to run.
   ///   - trimmingCharactersIn: Returns the output string trimming the characters given.
-  ///   - arguments: The shell command arguments to run.
   @discardableResult
   public func backgroundShell(
-    shell: LaunchPath = .sh,
-    environment environmentOverrides: [String: String]? = nil,
-    workingDirectory: String? = nil,
-    trimmingCharactersIn: CharacterSet? = nil,
-    _ arguments: (any CustomStringConvertible)...
+    _ command: ShellCommand,
+    trimmingCharactersIn: CharacterSet? = nil
   ) throws -> String {
-    let output = try self.backgroundShellAsData(
-      shell, environmentOverrides, arguments, workingDirectory
-    )
+    let output = try self.backgroundShell(command)
     let string = String(decoding: output, as: UTF8.self)
     guard let trimmingCharactersIn else { return string }
     return string.trimmingCharacters(in: trimmingCharactersIn)
   }
+ 
 }
 
 // MARK: - Overrides
@@ -105,17 +79,24 @@ extension ShellClient {
   public mutating func overrideBackgroundShell(
     with data: Data
   ) {
-    self.backgroundShellAsData = { _, _, _, _ in data }
+    self.backgroundShell = { _ in data }
   }
 }
 
-// MARK: - Test Dependency
-extension ShellClient: TestDependencyKey {
+// MARK: - Dependency
+extension ShellClient: DependencyKey {
   
   public static let testValue = Self.init(
     foregroundShell: unimplemented("\(Self.self).foregroundShell"),
-    backgroundShellAsData: unimplemented("\(Self.self).backgroundShellData", placeholder: Data())
+    backgroundShell: unimplemented("\(Self.self).backgroundShellData", placeholder: Data())
   )
+  
+  public static var liveValue: ShellClient {
+    .init(
+      foregroundShell: { try $0.run(in: .foreground) },
+      backgroundShell: { try $0.run(in: .background) }
+    )
+  }
 }
 
 extension DependencyValues {

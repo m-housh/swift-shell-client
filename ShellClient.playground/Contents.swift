@@ -10,4 +10,4 @@ let shellClient = withDependencies({
   return ShellClient.liveValue
 })
 
-try shellClient.foregroundShell(shell: .bash, "echo", "Foo", ">", "/tmp/bar.txt")
+try shellClient.foregroundShell(shell: .env, "echo", "Foo", ">", "/tmp/bar.txt")
