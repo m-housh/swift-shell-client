@@ -1,3 +1,4 @@
+DOCC_TARGET ?= ShellClient
 
 test-linux:
 	docker run -it --rm \
@@ -34,7 +35,7 @@ build-documentation:
 	swift package \
 		--allow-writing-to-directory ./docs \
 		generate-documentation \
-		--target Validations \
+		--target "$(DOCC_TARGET)" \
 		--disable-indexing \
 		--transform-for-static-hosting \
 		--hosting-base-path swift-validations \
