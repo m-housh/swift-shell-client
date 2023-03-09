@@ -38,7 +38,7 @@ build-documentation:
 		--target "$(DOCC_TARGET)" \
 		--disable-indexing \
 		--transform-for-static-hosting \
-		--hosting-base-path swift-validations \
+		--hosting-base-path swift-shell-client \
 		--output-path ./docs
 
 preview-documentation:

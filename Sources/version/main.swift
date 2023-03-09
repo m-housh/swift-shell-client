@@ -3,6 +3,7 @@ import Foundation
 import Logging
 import ShellClient
 
+// This is silly, just show casing custom string convertible works.
 enum GitCommand {
   case describe([DescribeArgs] = DescribeArgs.allCases)
   case revParse([RevParseArgs] = RevParseArgs.allCases)
