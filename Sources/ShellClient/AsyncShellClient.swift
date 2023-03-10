@@ -119,8 +119,8 @@ extension AsyncShellClient: DependencyKey {
   ///
   public static var liveValue: AsyncShellClient {
     .init(
-      foregroundShell: { try $0.run(in: .foreground) },
-      backgroundShell: { try $0.run(in: .background) }
+      foregroundShell: { try await $0.run(in: .foreground) },
+      backgroundShell: { try await $0.run(in: .background) }
     )
   }
 }

@@ -60,7 +60,7 @@ private struct ShellError: Error {
 }
 
 extension Process {
-
+  
   fileprivate static func configure(command: ShellCommand, context: RunContext) -> Process {
     @Dependency(\.logger) var logger: Logger
 
@@ -151,40 +151,24 @@ extension Process {
 
     try self.run()
     self.waitUntilExit()
-
+    
     guard self.terminationStatus == 0 else {
       throw ShellError(terminationStatus: self.terminationStatus)
     }
-
+    
     return output?.data() ?? Data()
   }
-
+  
+  fileprivate func runReturningResult(isForeground: Bool) -> Result<Data, Error> {
+    .init(catching: {
+      try self.runReturningData(isForeground: isForeground)
+    })
+  }
+  
   fileprivate func runReturningData(isForeground: Bool) async throws -> Data {
-
-    return try await withCheckedThrowingContinuation {
-      (continuation: CheckedContinuation<Data, Error>) in
-      self.terminationHandler = { process in
-        var output: Pipe?
-        if !isForeground {
-          output = Pipe()
-          process.standardOutput = output!
-
-          let error = Pipe()
-          process.standardError = error
-        }
-
-        if process.terminationStatus != 0 {
-          continuation.resume(throwing: ShellError(terminationStatus: process.terminationStatus))
-        } else {
-          continuation.resume(returning: output?.data() ?? Data())
-        }
-      }
-
-      do {
-        try self.run()
-      } catch {
-        continuation.resume(throwing: error)
-      }
+    return try await withCheckedThrowingContinuation { continuation in
+      let result = self.runReturningResult(isForeground: isForeground)
+      continuation.resume(with: result)
     }
   }
 }

@@ -26,11 +26,7 @@ struct TestRunner {
 enum Platform: String, CustomStringConvertible, CaseIterable {
   case macOS
   
-  var description: String {
-    switch self {
-    case .macOS: return rawValue
-    }
-  }
+  var description: String { rawValue }
 }
 
 enum Configuration: String, CustomStringConvertible, CaseIterable {

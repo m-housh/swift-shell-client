@@ -167,31 +167,50 @@ final class SwiftShellClientTests: XCTestCase {
       @Dependency(\.shellClient) var shellClient: ShellClient
       try shellClient.foreground(["echo", "Foo"])
       
-      try withDependencies {
-        $0.logger = .liveValue
-        $0.shellClient = .liveValue
-      } operation: {
-        try echo()
-      }
-
-      func echo() throws {
-        @Dependency(\.shellClient) var shellClient: ShellClient
-        
-        try shellClient.foreground(["echo", "Foo"])
-        
-        let output = try shellClient.background(
-          ["echo", "Foo"],
-          trimmingCharactersIn: .whitespacesAndNewlines
-        )
-        
-        XCTAssertEqual(output, "Foo")
-      }
+      
+      let output = try shellClient.background(
+        ["echo", "Foo"],
+        trimmingCharactersIn: .whitespacesAndNewlines
+      )
+      
+      XCTAssertEqual(output, "Foo")
       
       let logger = basicLogger(.showing(label: "log".red))
       logger.info("blob")
     }
   }
   
+  func test_echo_async() async throws {
+    try await withDependencies {
+      $0.logger = .liveValue
+      $0.asyncShellClient = .liveValue
+    } operation: {
+      try await echo()
+    }
+    
+    // Documentation Example
+    func echo() async throws {
+      @Dependency(\.asyncShellClient) var shell: AsyncShellClient
+      try await shell.foreground(["echo", "Foo"])
+
+      let output = try await shell.background(
+        ["echo", "Foo"],
+        trimmingCharactersIn: .whitespacesAndNewlines
+      )
+
+      XCTAssertEqual(output, "Foo")
+
+      let data = try await shell.background(
+        command: ["echo", #"'{"foo": "bar"}'"#],
+        as: [String: String].self
+      )
+
+      XCTAssertEqual(data["foo"], "bar")
+
+      let logger = basicLogger(.showing(label: "log".red))
+      logger.info("blob")
+    }
+  }
 }
 
 struct Mock: Codable {
