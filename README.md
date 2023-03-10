@@ -1,6 +1,8 @@
 # swift-shell-client
 
-Another package that allows you to run shell scripts from your
+[![CI](https://github.com/m-housh/swift-shell-client/actions/workflows/ci.yml/badge.svg)](https://github.com/m-housh/swift-shell-client/actions/workflows/ci.yml)
+
+A package that allows you to run shell scripts from your
 swift code.
 
 [Github Repository](https://github.com/m-housh/swift-shell-client)
