@@ -1,5 +1,5 @@
 import XCTest
-import Dependencies
+//import Dependencies
 import ShellClient
 
 final class SwiftShellClientTests: XCTestCase {
@@ -151,6 +151,44 @@ final class SwiftShellClientTests: XCTestCase {
         )
       
       XCTAssertEqual(result.value, "Blob")
+    }
+  }
+  
+  func test_echo() throws {
+    try withDependencies {
+      $0.logger = .liveValue
+      $0.shellClient = .liveValue
+    } operation: {
+      try echo()
+    }
+    
+    // Documentation Example
+    func echo() throws {
+      @Dependency(\.shellClient) var shellClient: ShellClient
+      try shellClient.foreground(["echo", "Foo"])
+      
+      try withDependencies {
+        $0.logger = .liveValue
+        $0.shellClient = .liveValue
+      } operation: {
+        try echo()
+      }
+
+      func echo() throws {
+        @Dependency(\.shellClient) var shellClient: ShellClient
+        
+        try shellClient.foreground(["echo", "Foo"])
+        
+        let output = try shellClient.background(
+          ["echo", "Foo"],
+          trimmingCharactersIn: .whitespacesAndNewlines
+        )
+        
+        XCTAssertEqual(output, "Foo")
+      }
+      
+      let logger = basicLogger(.showing(label: "log".red))
+      logger.info("blob")
     }
   }
   

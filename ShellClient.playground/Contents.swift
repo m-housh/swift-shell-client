@@ -1,13 +1,17 @@
 import Cocoa
-import Dependencies
 import ShellClient
 
-var greeting = "Hello, playground"
+try withDependencies {
+  $0.logger = .liveValue
+  $0.shellClient = .liveValue
+} operation: {
+  try echo()
+}
 
-let shellClient = withDependencies({
-  $0.logger.logLevel = .debug
-}, operation: {
-  return ShellClient.liveValue
-})
+func echo() throws {
+  @Dependency(\.shellClient) var shell: ShellClient
+  
+  try shell.foreground(["echo", "Foo"])
+}
 
-try shellClient.foregroundShell(shell: .env, "echo", "Foo", ">", "/tmp/bar.txt")
+print("Done.")

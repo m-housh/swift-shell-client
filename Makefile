@@ -1,4 +1,8 @@
 DOCC_TARGET ?= ShellClient
+DOCC_BASE_PATH = $(shell basename "$(PWD)")
+
+test-library:
+	swift run -c release test-library
 
 test-linux:
 	docker run -it --rm \
@@ -38,7 +42,7 @@ build-documentation:
 		--target "$(DOCC_TARGET)" \
 		--disable-indexing \
 		--transform-for-static-hosting \
-		--hosting-base-path swift-shell-client \
+		--hosting-base-path "$(DOCC_BASE_PATH)" \
 		--output-path ./docs
 
 preview-documentation:

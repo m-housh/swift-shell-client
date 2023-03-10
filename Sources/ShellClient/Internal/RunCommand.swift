@@ -90,7 +90,7 @@ extension Process {
     if let environment = command.environment {
       processEnvironment.merge(environment, uniquingKeysWith: { $1 })
     }
-
+    
     process.executableURL = command.shell.url
     process.arguments = arguments.count > 0 ? arguments : nil
     process.environment = processEnvironment

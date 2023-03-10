@@ -251,14 +251,6 @@ extension ShellCommand {
 }
 
 fileprivate func fileUrl(for string: String) -> URL {
-  #if os(Linux)
+  // Fallback on earlier versions
   return .init(fileURLWithPath: string)
-  #else
-  if #available(macOS 13.0, *) {
-    return .init(filePath: .init(stringLiteral: string))
-  } else {
-    // Fallback on earlier versions
-    return .init(fileURLWithPath: string)
-  }
-  #endif
 }

@@ -35,6 +35,12 @@ let package = Package(
       ]
     ),
     .executableTarget(
+      name: "test-library",
+      dependencies: [
+        "ShellClient",
+      ]
+    ),
+    .executableTarget(
       name: "version",
       dependencies: [
         "ShellClient",
