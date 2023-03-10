@@ -5,7 +5,7 @@ test-library:
 	swift run -c release test-library
 
 test-linux:
-	docker run -it --rm \
+	docker run --rm \
 		-v "$(PWD):$(PWD)" \
 		-w "$(PWD)" \
 		swift:5.7-focal \
