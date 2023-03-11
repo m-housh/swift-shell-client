@@ -76,7 +76,9 @@ extension Process {
     }
 
     var shellDescription = command.shell.description
-    if case .env(let env) = command.shell {
+    if case .env(let optionalEnv) = command.shell,
+       let env = optionalEnv
+    {
       shellDescription += " \(env.name)"
     }
 

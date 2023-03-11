@@ -140,7 +140,7 @@ extension ShellCommand {
     case custom(path: any CustomStringConvertible, useDashC: Bool)
     
     /// Uses `/usr/bin/env` to find the shell interpreter.
-    case env(Shell = .zsh)
+    case env(Shell? = nil)
     
     /// Represents the `/bin/sh` shell interpreter
     case sh(useDashC: Bool = true)
