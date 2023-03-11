@@ -191,6 +191,7 @@ final class SwiftShellClientTests: XCTestCase {
     // Documentation Example
     func echo() async throws {
       @Dependency(\.asyncShellClient) var shell: AsyncShellClient
+      
       try await shell.foreground(["echo", "Foo"])
 
       let output = try await shell.background(
@@ -201,7 +202,7 @@ final class SwiftShellClientTests: XCTestCase {
       XCTAssertEqual(output, "Foo")
 
       let data = try await shell.background(
-        command: ["echo", #"'{"foo": "bar"}'"#],
+        command: .init(shell: .zsh, ["echo", #"'{"foo": "bar"}'"#]),
         as: [String: String].self
       )
 

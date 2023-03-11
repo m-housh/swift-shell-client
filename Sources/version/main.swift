@@ -33,7 +33,7 @@ extension ShellCommand {
   static func git(shell: Shell? = nil, _ command: GitCommand) -> Self {
     .init(
       shell: shell ?? Self.defaultShell,
-      arguments: ["git"] + command.arguments
+      ["git"] + command.arguments
     )
   }
 }

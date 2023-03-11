@@ -12,14 +12,9 @@ import FoundationNetworking
 ///
 public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
   
-  #if os(Linux)
-  /// The default shell to use based on the os type.
-  public static let defaultShell: Shell = .sh
-  #else
-  /// The default shell to use based on the os type.
-  public static let defaultShell: Shell = .zsh
-  #endif
-  
+  /// The default shell to use.
+  public static let defaultShell = Shell.env()
+ 
   /// The arguments to pass to the shell program.
   public var arguments: [any CustomStringConvertible]
   
@@ -38,18 +33,11 @@ public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
     return fileUrl(for: workingDirectory)
   }
   
-  /// Create a new ``ShellCommand`` instance.
-  ///
-  /// - Parameters:
-  ///   - shell: The shell to use to run the command.
-  ///   - environment: Environment variables / overrides for the command.
-  ///   - workingDirectory: Change the working directory of the command.
-  ///   - arguments: Arguments passed to the shell program.
-  public init(
-    shell: Shell = Self.defaultShell,
-    environment: [String : String]? = nil,
-    in workingDirectory: String? = nil,
-    arguments: [any CustomStringConvertible] = []
+  internal init(
+    shell: Shell,
+    environment: [String : String]?,
+    in workingDirectory: String?,
+    arguments: [any CustomStringConvertible]
   ) {
     self.arguments = arguments
     self.environment = environment
@@ -57,6 +45,7 @@ public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
     self.workingDirectory = workingDirectory
   }
   
+  
   /// Create a new ``ShellCommand`` instance.
   ///
   /// - Parameters:
@@ -68,7 +57,7 @@ public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
     shell: Shell = Self.defaultShell,
     environment: [String : String]? = nil,
     in workingDirectory: String? = nil,
-    arguments: (any CustomStringConvertible)...
+    _ arguments: [any CustomStringConvertible] = []
   ) {
     self.init(
       shell: shell,
@@ -80,35 +69,16 @@ public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
   
   /// Create a new ``ShellCommand`` instance.
   ///
-  /// This overload is useful when declaring your own custom types to use as the arguments.
-  ///
-  /// ```swift
-  /// enum MyCommandArgs: String, CustomStringConvertible {
-  ///   case echo
-  ///   case message(String)
-  ///
-  ///   var description: String {
-  ///     switch self {
-  ///     case .echo:
-  ///       return "echo"
-  ///     case .message(let message):
-  ///       return message
-  ///   }
-  /// }
-  ///
-  /// let command = ShellCommand<MyCommandArgs>(.echo, .message("Blob"))
-  /// ```
-  ///
   /// - Parameters:
   ///   - shell: The shell to use to run the command.
   ///   - environment: Environment variables / overrides for the command.
   ///   - workingDirectory: Change the working directory of the command.
   ///   - arguments: Arguments passed to the shell program.
-  public init<C: CustomStringConvertible>(
+  public init(
     shell: Shell = Self.defaultShell,
     environment: [String : String]? = nil,
     in workingDirectory: String? = nil,
-    _ arguments: C...
+    _ arguments: (any CustomStringConvertible)...
   ) {
     self.init(
       shell: shell,
@@ -117,6 +87,7 @@ public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
       arguments: arguments
     )
   }
+
 }
 
 extension ShellCommand {
@@ -246,7 +217,7 @@ extension ShellCommand {
   public typealias ArrayLiteralElement = (any CustomStringConvertible)
   
   public init(arrayLiteral elements: (any CustomStringConvertible)...) {
-    self.init(arguments: elements)
+    self.init(elements)
   }
 }
 
