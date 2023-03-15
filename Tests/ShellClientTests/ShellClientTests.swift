@@ -201,8 +201,15 @@ final class SwiftShellClientTests: XCTestCase {
 
       XCTAssertEqual(output, "Foo")
 
+      let osShell: ShellCommand.Shell
+      #if os(Linux)
+      osShell = ShellCommand.Shell.bash
+      #else
+      osShell = ShellCommand.Shell.zsh()
+      #endif
+
       let data = try await shell.background(
-        command: .init(shell: .zsh, ["echo", #"'{"foo": "bar"}'"#]),
+        command: .init(shell: osShell, ["echo", #"'{"foo": "bar"}'"#]),
         as: [String: String].self
       )
 

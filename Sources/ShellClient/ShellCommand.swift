@@ -11,10 +11,10 @@ import FoundationNetworking
 /// environment.
 ///
 public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
-  
+
   /// The default shell to use.
   public static let defaultShell = Shell.env()
- 
+
   /// The arguments to pass to the shell program.
   public var arguments: [any CustomStringConvertible]
   
