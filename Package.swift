@@ -12,7 +12,7 @@ let package = Package(
     .library(name: "ShellClient", targets: ["ShellClient"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/pointfreeco/swift-dependencies.git", from: "0.1.4"),
+    .package(url: "https://github.com/pointfreeco/swift-dependencies.git", from: "1.0.0"),
     .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
     .package(url: "https://github.com/adorkable/swift-log-format-and-pipe.git", from: "0.1.0"),
     .package(url: "https://github.com/onevcat/Rainbow", from: "4.0.0"),
