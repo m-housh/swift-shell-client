@@ -3,27 +3,50 @@ import Foundation
 @_exported import Logging
 import LoggingFormatAndPipe
 
-extension Logger: DependencyKey {
+#if os(Linux)
+  extension Logger: DependencyKey {
 
-  /// Access a live `Logger` instance as a dependency, this logger does not show a label.
-  ///
-  /// ```swift
-  /// @Dependency(\.logger) var logger
-  /// ```
-  public static var liveValue: Logger {
-    basicLogger(.hidden(label: "shell-client"))
-  }
-  
-  /// Access a test `Logger` instance as a dependency, this logger does show a label in red.
-  ///
-  /// ```swift
-  /// @Dependency(\.logger) var logger
-  /// ```
-  public static var testValue: Logger {
-    basicLogger(.showing(label: "shell-client-test".red))
-  }
+    /// Access a live `Logger` instance as a dependency, this logger does not show a label.
+    ///
+    /// ```swift
+    /// @Dependency(\.logger) var logger
+    /// ```
+    public static var liveValue: Logger {
+      basicLogger(.hidden(label: "shell-client"))
+    }
 
-}
+    /// Access a test `Logger` instance as a dependency, this logger does show a label in red.
+    ///
+    /// ```swift
+    /// @Dependency(\.logger) var logger
+    /// ```
+    public static var testValue: Logger {
+      basicLogger(.showing(label: "shell-client-test".red))
+    }
+  }
+#else
+  extension Logger: @retroactive DependencyKey {
+
+    /// Access a live `Logger` instance as a dependency, this logger does not show a label.
+    ///
+    /// ```swift
+    /// @Dependency(\.logger) var logger
+    /// ```
+    public static var liveValue: Logger {
+      basicLogger(.hidden(label: "shell-client"))
+    }
+
+    /// Access a test `Logger` instance as a dependency, this logger does show a label in red.
+    ///
+    /// ```swift
+    /// @Dependency(\.logger) var logger
+    /// ```
+    public static var testValue: Logger {
+      basicLogger(.showing(label: "shell-client-test".red))
+    }
+
+  }
+#endif
 
 /// Create a `Logger` instance that logs messages, optionally showing a label.
 ///
@@ -48,18 +71,18 @@ public func basicLogger(_ label: Label) -> Logger {
 /// Represents a `Logger` label that can optionally be included in messages, when creating a logger using
 /// the ``basicLogger(_:)`` function.
 public enum Label {
-  
+
   /// Show the label in the log message.
   case showing(label: any CustomStringConvertible)
-  
+
   /// Don't show the label in the log message.
   case hidden(label: any CustomStringConvertible)
 
   fileprivate var label: String {
     switch self {
-    case .showing(let label):
+    case let .showing(label):
       return label.description
-    case .hidden(let label):
+    case let .hidden(label):
       return label.description
     }
   }
@@ -74,11 +97,11 @@ public enum Label {
   }
 }
 
-extension DependencyValues {
-  
+public extension DependencyValues {
+
   /// Access a `Logger` as a dependency.
   ///
-  public var logger: Logger {
+  var logger: Logger {
     get { self[Logger.self] }
     set { self[Logger.self] = newValue }
   }

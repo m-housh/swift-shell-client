@@ -1,6 +1,6 @@
 import Foundation
 #if canImport(FoundationNetworking)
-import FoundationNetworking
+  import FoundationNetworking
 #endif
 
 /// Represents a command that can be run by a ``ShellClient`` or an ``AsyncShellClient``.
@@ -10,42 +10,41 @@ import FoundationNetworking
 /// variable will also be set in the environment or override a value if a key already is set in the `ProcessInfo`
 /// environment.
 ///
-public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
+public struct ShellCommand: Equatable, ExpressibleByArrayLiteral, Sendable {
 
   /// The default shell to use.
   public static let defaultShell = Shell.env()
 
   /// The arguments to pass to the shell program.
-  public var arguments: [any CustomStringConvertible]
-  
+  public let arguments: [String]
+
   /// Any environment variables / overrides to set in the process environment.
-  public var environment: [String: String]?
-  
+  public let environment: [String: String]?
+
   /// The shell to use to run the command.
-  public var shell: Shell
-  
+  public let shell: Shell
+
   /// Changes the working directory that the command runs in.
-  public var workingDirectory: String?
-  
+  public let workingDirectory: String?
+
   /// Access the working directory as a `URL` if set.
   public var workingDirectoryUrl: URL? {
     guard let workingDirectory else { return nil }
     return fileUrl(for: workingDirectory)
   }
-  
-  internal init(
+
+  init(
     shell: Shell,
-    environment: [String : String]?,
+    environment: [String: String]?,
     in workingDirectory: String?,
-    arguments: [any CustomStringConvertible]
+    arguments: [String]
   ) {
     self.arguments = arguments
     self.environment = environment
     self.shell = shell
     self.workingDirectory = workingDirectory
   }
-  
-  
+
   /// Create a new ``ShellCommand`` instance.
   ///
   /// - Parameters:
@@ -55,9 +54,9 @@ public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
   ///   - arguments: Arguments passed to the shell program.
   public init(
     shell: Shell = Self.defaultShell,
-    environment: [String : String]? = nil,
+    environment: [String: String]? = nil,
     in workingDirectory: String? = nil,
-    _ arguments: [any CustomStringConvertible] = []
+    _ arguments: [String] = []
   ) {
     self.init(
       shell: shell,
@@ -66,7 +65,7 @@ public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
       arguments: arguments
     )
   }
-  
+
   /// Create a new ``ShellCommand`` instance.
   ///
   /// - Parameters:
@@ -76,9 +75,9 @@ public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
   ///   - arguments: Arguments passed to the shell program.
   public init(
     shell: Shell = Self.defaultShell,
-    environment: [String : String]? = nil,
+    environment: [String: String]? = nil,
     in workingDirectory: String? = nil,
-    _ arguments: (any CustomStringConvertible)...
+    _ arguments: String...
   ) {
     self.init(
       shell: shell,
@@ -90,8 +89,9 @@ public struct ShellCommand: Equatable, ExpressibleByArrayLiteral {
 
 }
 
-extension ShellCommand {
-  
+// swiftlint:disable identifier_name
+public extension ShellCommand {
+
   /// These represent the shell interpreter to run the ``ShellCommand``.
   ///
   /// This is a non-exhaustive list of shells that are on many `macOS` machines, however
@@ -99,47 +99,47 @@ extension ShellCommand {
   /// that is at one of the built-in paths (i.e. not in `/bin`).
   ///
   ///
-  public indirect enum Shell: CustomStringConvertible, Equatable {
-    
+  indirect enum Shell: CustomStringConvertible, Equatable, Sendable {
+
     /// Represents the `/bin/bash` shell interpreter.
     case bash(useDashC: Bool = true)
-    
+
     /// Represents the `/bin/csh` shell interpreter.
     case csh(useDashC: Bool = true)
-    
+
     /// Represents a customized shell interpreter.
-    case custom(path: any CustomStringConvertible, useDashC: Bool)
-    
+    case custom(path: String, useDashC: Bool)
+
     /// Uses `/usr/bin/env` to find the shell interpreter.
     case env(Shell? = nil)
-    
+
     /// Represents the `/bin/sh` shell interpreter
     case sh(useDashC: Bool = true)
-    
+
     /// Represents the `/bin/tcsh` shell interpreter
     case tcsh(useDashC: Bool = true)
-    
+
     /// Represents the `/bin/zsh` shell interpreter
     case zsh(useDashC: Bool = true)
-    
+
     /// The default `/bin/bash` interpreter using `-c`.
     public static var bash: Self { .bash() }
-    
+
     /// The default `/bin/csh` interpreter using `-c`.
     public static var csh: Self { .csh() }
-    
+
     /// The default `/usr/bin/env` using `zsh` as the shell interpreter.
     public static var env: Self { .env() }
-    
+
     /// The default `/bin/sh` interpreter using `-c`.
     public static var sh: Self { .sh() }
-    
+
     /// The default `/bin/tcsh` interpreter using `-c`.
     public static var tcsh: Self { .tcsh() }
-    
+
     /// The default `/bin/zsh` interpreter using `-c`.
     public static var zsh: Self { .zsh() }
-    
+
     public var description: String {
       switch self {
       case .bash:
@@ -158,7 +158,7 @@ extension ShellCommand {
         return path.description
       }
     }
-    
+
     /// Represents the name of the shell interpreter.
     public var name: String {
       guard let lastComponent = description.split(separator: "/").last else {
@@ -166,7 +166,7 @@ extension ShellCommand {
       }
       return String(lastComponent)
     }
-    
+
     /// Whether the shell interpreter should use a `-c` argument.
     public var useDashC: Bool {
       switch self {
@@ -174,54 +174,57 @@ extension ShellCommand {
         return false
       case .custom(path: _, useDashC: let useDashC):
         return useDashC
-      case .bash(useDashC: let usedashc):
+      case let .bash(useDashC: usedashc):
         return usedashc
-      case .csh(useDashC: let usedashc):
+      case let .csh(useDashC: usedashc):
         return usedashc
-      case .sh(useDashC: let usedashc):
+      case let .sh(useDashC: usedashc):
         return usedashc
-      case .tcsh(useDashC: let usedashc):
+      case let .tcsh(useDashC: usedashc):
         return usedashc
-      case .zsh(useDashC: let usedashc):
+      case let .zsh(useDashC: usedashc):
         return usedashc
       }
     }
-    
+
     /// Access the file url for the shell interpreter.
     public var url: URL {
-      fileUrl(for: self.description)
+      fileUrl(for: description)
     }
   }
 }
 
+// swiftlint:enable identifier_name
+
 // MARK: - Equatable
 
-extension ShellCommand.Shell {
-  public static func == (lhs: ShellCommand.Shell, rhs: ShellCommand.Shell) -> Bool {
+public extension ShellCommand.Shell {
+  static func == (lhs: ShellCommand.Shell, rhs: ShellCommand.Shell) -> Bool {
     return lhs.description == rhs.description
-    && lhs.useDashC == rhs.useDashC
+      && lhs.useDashC == rhs.useDashC
   }
 }
 
-extension ShellCommand {
-  public static func == (lhs: ShellCommand, rhs: ShellCommand) -> Bool {
+public extension ShellCommand {
+  static func == (lhs: ShellCommand, rhs: ShellCommand) -> Bool {
     return lhs.arguments.map(\.description) == rhs.arguments.map(\.description)
-    && lhs.environment == rhs.environment
-    && lhs.shell == rhs.shell
-    && lhs.workingDirectory == rhs.workingDirectory
+      && lhs.environment == rhs.environment
+      && lhs.shell == rhs.shell
+      && lhs.workingDirectory == rhs.workingDirectory
   }
 }
 
 // MARK: - ExpressibleByArrayLiteral
-extension ShellCommand {
-  public typealias ArrayLiteralElement = (any CustomStringConvertible)
-  
-  public init(arrayLiteral elements: (any CustomStringConvertible)...) {
+
+public extension ShellCommand {
+  typealias ArrayLiteralElement = String
+
+  init(arrayLiteral elements: String...) {
     self.init(elements)
   }
 }
 
-fileprivate func fileUrl(for string: String) -> URL {
+private func fileUrl(for string: String) -> URL {
   // Fallback on earlier versions
   return .init(fileURLWithPath: string)
 }

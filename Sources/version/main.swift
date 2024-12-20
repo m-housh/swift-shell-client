@@ -5,21 +5,21 @@ import ShellClient
 enum GitCommand {
   case describe([DescribeArgs] = DescribeArgs.allCases)
   case revParse([RevParseArgs] = RevParseArgs.allCases)
-  
+
   enum DescribeArgs: String, CustomStringConvertible, CaseIterable {
     case exactMatch = "--exact-match"
     case tags = "--tags"
   }
-  
+
   enum RevParseArgs: String, CustomStringConvertible, CaseIterable {
     case head = "HEAD"
   }
-  
+
   var arguments: [any CustomStringConvertible] {
     switch self {
-    case .describe(let args):
+    case let .describe(args):
       return ["describe"] + args
-    case .revParse(let args):
+    case let .revParse(args):
       return ["rev-parse"] + args
     }
   }
@@ -32,8 +32,8 @@ extension RawRepresentable where RawValue == String, Self: CustomStringConvertib
 extension ShellCommand {
   static func git(shell: Shell? = nil, _ command: GitCommand) -> Self {
     .init(
-      shell: shell ?? Self.defaultShell,
-      ["git"] + command.arguments
+      shell: shell ?? defaultShell,
+      ["git"] + command.arguments.map(\.description)
     )
   }
 }
@@ -43,7 +43,7 @@ extension ShellCommand {
 func run() throws {
   @Dependency(\.logger) var logger
   @Dependency(\.shellClient) var shell
-  
+
   // Silly example, you would generally do this in a background process.
   do {
     try shell.foreground(.git(.describe()))

@@ -1,21 +1,22 @@
 DOCC_TARGET ?= ShellClient
 DOCC_BASE_PATH = $(shell basename "$(PWD)")
+SWIFT_DOCKER_VERSION ?= "5.10"
 
 test-library:
-	swift run -c release test-library
+	swift test
 
 test-linux:
 	docker run --rm \
 		-v "$(PWD):$(PWD)" \
 		-w "$(PWD)" \
-		swift:5.7-focal \
+		"swift:$(SWIFT_DOCKER_VERSION)" \
 		swift test
 
 run-version-linux:
 	docker run -it --rm \
 		-v "$(PWD):$(PWD)" \
 		-w "$(PWD)" \
-		swift:5.7-focal \
+		"swift:$(SWIFT_DOCKER_VERSION)" \
 		swift run version
 
 clean:

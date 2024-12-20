@@ -1,22 +1,22 @@
-import ShellClient
 import Foundation
+import ShellClient
 
 struct TestRunner {
   @Dependency(\.logger) var logger: Logger
   @Dependency(\.shellClient) var shell: ShellClient
-  
+
   let platform: Platform
   let configuration: Configuration
-  
+
   func run() throws {
     logger.info("\("Running for platform: \(platform)".bold)")
-    
+
     try shell.foreground(
       .init(shell: .env, [
         "xcodebuild", "test",
-        "-configuration", configuration,
+        "-configuration", configuration.rawValue,
         "-workspace", "ShellClient.xcworkspace",
-        "-scheme", "ShellClient",
+        "-scheme", "swift-shell-client-Package",
         "-destination", "platform=\(platform)"
       ])
     )
@@ -25,7 +25,7 @@ struct TestRunner {
 
 enum Platform: String, CustomStringConvertible, CaseIterable {
   case macOS
-  
+
   var description: String { rawValue }
 }
 
@@ -48,4 +48,3 @@ try withDependencies {
 } operation: {
   try main()
 }
-
