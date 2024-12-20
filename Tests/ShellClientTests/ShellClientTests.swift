@@ -153,30 +153,32 @@ final class SwiftShellClientTests: XCTestCase {
     }
   }
 
-  func test_echo() throws {
-    try withDependencies {
-      $0.logger = .liveValue
-      $0.shellClient = .liveValue
-    } operation: {
-      try echo()
+  #if !os(Linux)
+    func test_echo() throws {
+      try withDependencies {
+        $0.logger = .liveValue
+        $0.shellClient = .liveValue
+      } operation: {
+        try echo()
+      }
+
+      // Documentation Example
+      func echo() throws {
+        @Dependency(\.shellClient) var shellClient: ShellClient
+        try shellClient.foreground(["echo", "Foo"])
+
+        let output = try shellClient.background(
+          ["echo", "Foo"],
+          trimmingCharactersIn: .whitespacesAndNewlines
+        )
+
+        XCTAssertEqual(output, "Foo")
+
+        let logger = basicLogger(.showing(label: "log".red))
+        logger.info("blob")
+      }
     }
-
-    // Documentation Example
-    func echo() throws {
-      @Dependency(\.shellClient) var shellClient: ShellClient
-      try shellClient.foreground(["echo", "Foo"])
-
-      let output = try shellClient.background(
-        ["echo", "Foo"],
-        trimmingCharactersIn: .whitespacesAndNewlines
-      )
-
-      XCTAssertEqual(output, "Foo")
-
-      let logger = basicLogger(.showing(label: "log".red))
-      logger.info("blob")
-    }
-  }
+  #endif
 
   func test_echo_async() async throws {
     try await withDependencies {

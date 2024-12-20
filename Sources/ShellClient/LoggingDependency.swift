@@ -3,27 +3,50 @@ import Foundation
 @_exported import Logging
 import LoggingFormatAndPipe
 
-extension Logger: @retroactive DependencyKey {
+#if os(Linux)
+  extension Logger: DependencyKey {
 
-  /// Access a live `Logger` instance as a dependency, this logger does not show a label.
-  ///
-  /// ```swift
-  /// @Dependency(\.logger) var logger
-  /// ```
-  public static var liveValue: Logger {
-    basicLogger(.hidden(label: "shell-client"))
+    /// Access a live `Logger` instance as a dependency, this logger does not show a label.
+    ///
+    /// ```swift
+    /// @Dependency(\.logger) var logger
+    /// ```
+    public static var liveValue: Logger {
+      basicLogger(.hidden(label: "shell-client"))
+    }
+
+    /// Access a test `Logger` instance as a dependency, this logger does show a label in red.
+    ///
+    /// ```swift
+    /// @Dependency(\.logger) var logger
+    /// ```
+    public static var testValue: Logger {
+      basicLogger(.showing(label: "shell-client-test".red))
+    }
   }
+#else
+  extension Logger: @retroactive DependencyKey {
 
-  /// Access a test `Logger` instance as a dependency, this logger does show a label in red.
-  ///
-  /// ```swift
-  /// @Dependency(\.logger) var logger
-  /// ```
-  public static var testValue: Logger {
-    basicLogger(.showing(label: "shell-client-test".red))
+    /// Access a live `Logger` instance as a dependency, this logger does not show a label.
+    ///
+    /// ```swift
+    /// @Dependency(\.logger) var logger
+    /// ```
+    public static var liveValue: Logger {
+      basicLogger(.hidden(label: "shell-client"))
+    }
+
+    /// Access a test `Logger` instance as a dependency, this logger does show a label in red.
+    ///
+    /// ```swift
+    /// @Dependency(\.logger) var logger
+    /// ```
+    public static var testValue: Logger {
+      basicLogger(.showing(label: "shell-client-test".red))
+    }
+
   }
-
-}
+#endif
 
 /// Create a `Logger` instance that logs messages, optionally showing a label.
 ///
