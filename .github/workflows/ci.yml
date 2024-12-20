@@ -8,7 +8,7 @@ on:
 jobs:
   mac:
     name: macOS
-    runs-on: macOS-12
+    runs-on: macOS-15
     strategy:
       matrix:
         xcode: ['14.2']
@@ -27,7 +27,7 @@ jobs:
     steps:
     - uses: swift-actions/setup-swift@v1
       with:
-        swift-version: 5.7
+        swift-version: 5.10
     - uses: actions/checkout@v3
     - name: Run Tests
       run: make DOCKER_PLATFORM=linux/amd64 test-linux

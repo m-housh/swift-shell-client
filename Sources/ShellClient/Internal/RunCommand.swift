@@ -31,7 +31,8 @@ enum RunContext {
 }
 
 // MARK: - Private
-fileprivate func runCommand(command: ShellCommand, context: RunContext) throws -> Data {
+
+private func runCommand(command: ShellCommand, context: RunContext) throws -> Data {
   @Dependency(\.logger) var logger: Logger
 
   let isForeground = context.isForeground
@@ -43,7 +44,7 @@ fileprivate func runCommand(command: ShellCommand, context: RunContext) throws -
   return try task.runReturningData(isForeground: isForeground)
 }
 
-fileprivate func runCommand(command: ShellCommand, context: RunContext) async throws -> Data {
+private func runCommand(command: ShellCommand, context: RunContext) async throws -> Data {
   @Dependency(\.logger) var logger: Logger
 
   let isForeground = context.isForeground
@@ -59,9 +60,9 @@ private struct ShellError: Error {
   var terminationStatus: Int32
 }
 
-extension Process {
-  
-  fileprivate static func configure(command: ShellCommand, context: RunContext) -> Process {
+private extension Process {
+
+  static func configure(command: ShellCommand, context: RunContext) -> Process {
     @Dependency(\.logger) var logger: Logger
 
     let process = Process()
@@ -71,20 +72,20 @@ extension Process {
       // condense to a single argument to be passed to -c commands.
       arguments = [
         "-c",
-        arguments.joined(separator: " "),
+        arguments.joined(separator: " ")
       ]
     }
 
     var shellDescription = command.shell.description
-    if case .env(let optionalEnv) = command.shell,
+    if case let .env(optionalEnv) = command.shell,
        let env = optionalEnv
     {
       shellDescription += " \(env.name)"
     }
 
     let message = """
-      \("$".magenta) \(shellDescription.blue) \(arguments.joined( separator: " "))
-      """
+    \("$".magenta) \(shellDescription.blue) \(arguments.joined(separator: " "))
+    """
 
     logger.debug("\(message)")
 
@@ -92,7 +93,7 @@ extension Process {
     if let environment = command.environment {
       processEnvironment.merge(environment, uniquingKeysWith: { $1 })
     }
-    
+
     process.executableURL = command.shell.url
     process.arguments = arguments.count > 0 ? arguments : nil
     process.environment = processEnvironment
@@ -108,7 +109,6 @@ extension Process {
 private func flattenArguments(
   _ arguments: [any CustomStringConvertible]
 ) -> [any CustomStringConvertible] {
-
   var output: [any CustomStringConvertible] = []
 
   for argument in arguments {
@@ -120,13 +120,13 @@ private func flattenArguments(
       output.append(argument)
     }
   }
-  
+
   return output
 }
 
-extension Pipe {
+private extension Pipe {
 
-  fileprivate func data() -> Data {
+  func data() -> Data {
     if #available(macOS 10.15.4, *) {
       guard let data = try? self.fileHandleForReading.readToEnd() else {
         return Data()
@@ -134,40 +134,40 @@ extension Pipe {
       return data
     } else {
       // Fallback on earlier versions
-      return self.fileHandleForReading.readDataToEndOfFile()
+      return fileHandleForReading.readDataToEndOfFile()
     }
   }
 }
 
-extension Process {
+private extension Process {
 
-  fileprivate func runReturningData(isForeground: Bool) throws -> Data {
+  func runReturningData(isForeground: Bool) throws -> Data {
     var output: Pipe?
     if !isForeground {
       output = Pipe()
-      self.standardOutput = output!
+      standardOutput = output!
 
       let error = Pipe()
-      self.standardError = error
+      standardError = error
     }
 
-    try self.run()
-    self.waitUntilExit()
-    
-    guard self.terminationStatus == 0 else {
-      throw ShellError(terminationStatus: self.terminationStatus)
+    try run()
+    waitUntilExit()
+
+    guard terminationStatus == 0 else {
+      throw ShellError(terminationStatus: terminationStatus)
     }
-    
+
     return output?.data() ?? Data()
   }
-  
-  fileprivate func runReturningResult(isForeground: Bool) -> Result<Data, Error> {
+
+  func runReturningResult(isForeground: Bool) -> Result<Data, Error> {
     .init(catching: {
       try self.runReturningData(isForeground: isForeground)
     })
   }
-  
-  fileprivate func runReturningData(isForeground: Bool) async throws -> Data {
+
+  func runReturningData(isForeground: Bool) async throws -> Data {
     return try await withCheckedThrowingContinuation { continuation in
       let result = self.runReturningResult(isForeground: isForeground)
       continuation.resume(with: result)
