@@ -20,9 +20,6 @@ jobs:
     name: Ubuntu
     runs-on: ubuntu-latest
     steps:
-    - uses: swift-actions/setup-swift@v2
-      with:
-        swift-version: 5.10
     - uses: actions/checkout@v3
     - name: Run Tests
       run: make DOCKER_PLATFORM=linux/amd64 test-linux
