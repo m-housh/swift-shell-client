@@ -16,7 +16,7 @@ struct TestRunner {
         "xcodebuild", "test",
         "-configuration", configuration.rawValue,
         "-workspace", "ShellClient.xcworkspace",
-        "-scheme", "ShellClient",
+        "-scheme", "swift-shell-client-Package",
         "-destination", "platform=\(platform)"
       ])
     )
