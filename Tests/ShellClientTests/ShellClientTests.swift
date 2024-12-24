@@ -227,8 +227,8 @@ final class SwiftShellClientTests: XCTestCase {
       try await asyncShellClient.foreground([
         "foo", "bar"
       ])
-    } assert: { command in
-      XCTAssertEqual(command.arguments, ["foo", "bar"])
+    } assert: { commands in
+      XCTAssertEqual(commands.first!.arguments, ["foo", "bar"])
     }
   }
 }

@@ -2,11 +2,11 @@
 ///
 /// This is useful for testing purposes.
 public actor CapturedCommand: Sendable {
-  public private(set) var command: ShellCommand?
+  public private(set) var commands: [ShellCommand] = []
 
   public init() {}
 
   func set(_ command: ShellCommand) {
-    self.command = command
+    commands.append(command)
   }
 }

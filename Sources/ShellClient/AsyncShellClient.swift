@@ -139,7 +139,7 @@ extension AsyncShellClient: DependencyKey {
 public extension AsyncShellClient {
   static func withCapturingCommandClient(
     operation: () async throws -> Void,
-    assert: (ShellCommand) async throws -> Void
+    assert: ([ShellCommand]) async throws -> Void
   ) async throws {
     let captured = CapturedCommand()
     try await withDependencies {
@@ -147,11 +147,11 @@ public extension AsyncShellClient {
     } operation: {
       try await operation()
     }
-    let command = await captured.command
-    guard let command else {
+    let commands = await captured.commands
+    guard commands.count > 0 else {
       throw CapturingError.commandNotSet
     }
-    try await assert(command)
+    try await assert(commands)
   }
 }
 
